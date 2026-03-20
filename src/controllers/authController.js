@@ -94,3 +94,17 @@ exports.login = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+exports.validateToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token is required', statusCode: 400 });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({ success: true, data: decoded, message: 'Token is valid' });
+  } catch (err) {
+    return res.status(401).json({ success: false, error: 'Invalid token', statusCode: 401 });
+  }
+};

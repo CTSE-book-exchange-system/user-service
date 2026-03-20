@@ -18,4 +18,7 @@ router.post(
 
 router.post('/login', controller.login);
 
+router.post('/validate', controller.validateToken);
+
+
 module.exports = router;
