@@ -1,13 +1,22 @@
 const db = require('../db');
 
 const createUser = async (user) => {
-  const { name, email, password, university, course, year } = user;
+  const {
+    name,
+    email,
+    password,
+    university,
+    course,
+    year,
+    googleId = null,
+    authProvider = 'local',
+  } = user;
 
   const result = await db.query(
-    `INSERT INTO users (name, email, password, university, course, year)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, name, email, university, course, year, role, is_active, created_at, updated_at`,
-    [name, email, password, university, course, year]
+    `INSERT INTO users (name, email, password, university, course, year, google_id, auth_provider)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, name, email, university, course, year, role, is_active, created_at, updated_at, auth_provider, google_id`,
+    [name, email, password || null, university, course || null, year || null, googleId, authProvider]
   );
 
   return result.rows[0];
@@ -23,7 +32,7 @@ const findByEmail = async (email) => {
 
 const findById = async (id) => {
   const result = await db.query(
-    `SELECT id, name, email, university, course, year, role, is_active, created_at, updated_at
+    `SELECT id, name, email, university, course, year, role, is_active, created_at, updated_at, auth_provider, google_id
      FROM users
      WHERE id = $1`,
     [id]
@@ -31,10 +40,52 @@ const findById = async (id) => {
   return result.rows[0];
 };
 
+const findByGoogleId = async (googleId) => {
+  const result = await db.query(
+    'SELECT * FROM users WHERE google_id = $1',
+    [googleId]
+  );
+
+  return result.rows[0];
+};
+
+const updateGoogleAccount = async (id, googleId) => {
+  const result = await db.query(
+    `UPDATE users
+     SET google_id = $2, auth_provider = 'google', updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, name, email, university, course, year, role, is_active, created_at, updated_at, auth_provider, google_id`,
+    [id, googleId]
+  );
+
+  return result.rows[0];
+};
+
+const findOrCreateGoogleUser = async ({ googleId, email, name, university }) => {
+  const linkedUser = await findByGoogleId(googleId);
+  if (linkedUser) {
+    return linkedUser;
+  }
+
+  const existingUser = await findByEmail(email);
+  if (existingUser) {
+    return updateGoogleAccount(existingUser.id, googleId);
+  }
+
+  return createUser({
+    name,
+    email,
+    password: null,
+    university,
+    googleId,
+    authProvider: 'google',
+  });
+};
+
 const searchUsers = async (filters = {}) => {
   const { university, course } = filters;
   const result = await db.query(
-    `SELECT id, name, email, university, course, year, role, is_active, created_at, updated_at
+    `SELECT id, name, email, university, course, year, role, is_active, created_at, updated_at, auth_provider, google_id
      FROM users
      WHERE ($1::text IS NULL OR university ILIKE '%' || $1 || '%')
        AND ($2::text IS NULL OR course ILIKE '%' || $2 || '%')
@@ -59,7 +110,7 @@ const updateUser = async (id, fields) => {
     `UPDATE users
      SET ${setClauses.join(', ')}, updated_at = NOW()
      WHERE id = $1
-     RETURNING id, name, email, university, course, year, role, is_active, created_at, updated_at`,
+     RETURNING id, name, email, university, course, year, role, is_active, created_at, updated_at, auth_provider, google_id`,
     [id, ...values]
   );
 
@@ -93,6 +144,8 @@ module.exports = {
   createUser,
   findByEmail,
   findById,
+  findByGoogleId,
+  findOrCreateGoogleUser,
   searchUsers,
   updateUser,
   getSavedSearches,

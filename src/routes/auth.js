@@ -20,5 +20,9 @@ router.post('/login', controller.login);
 
 router.post('/validate', controller.validateToken);
 
+router.get('/google', controller.startGoogleAuth);
+
+router.get('/google/callback', controller.handleGoogleCallback);
+
 
 module.exports = router;

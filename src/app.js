@@ -2,18 +2,38 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const session = require('express-session');
 require('dotenv').config();
+const { passport } = require('./config/passport');
 
 const app = express();
 
 app.use(helmet());
-app.use(cors());
 app.use(express.json());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
 });
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  },
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 app.use('/api/auth/login', loginLimiter);
 
