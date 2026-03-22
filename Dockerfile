@@ -7,4 +7,4 @@ COPY swagger.js ./
 EXPOSE 3000
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
-CMD ["node", "src/app.js"]
+CMD ["node", "src/server.js"]
