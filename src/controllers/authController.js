@@ -20,6 +20,24 @@ const generateToken = (user) => {
 
 const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+const logAuthError = (action, err) => {
+  console.error(`[auth:${action}]`, {
+    name: err?.name,
+    message: err?.message,
+    code: err?.code,
+    detail: err?.detail,
+    stack: err?.stack,
+  });
+};
+
+const sendAuthServerError = (res) => {
+  return res.status(500).json({
+    success: false,
+    error: 'Authentication service error',
+    statusCode: 500,
+  });
+};
+
 const buildFrontendRedirect = (path, params = {}) => {
   const url = new URL(path, frontendBaseUrl);
 
@@ -67,7 +85,8 @@ exports.register = async (req, res) => {
       data: { token, user },
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    logAuthError('register', err);
+    return sendAuthServerError(res);
   }
 };
 
@@ -114,7 +133,8 @@ exports.login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    logAuthError('login', err);
+    return sendAuthServerError(res);
   }
 };
 

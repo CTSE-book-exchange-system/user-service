@@ -19,4 +19,8 @@ const pool = connectionString
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
+  healthCheck: async () => {
+    const result = await pool.query('SELECT 1 AS ok');
+    return result.rows[0];
+  },
 };

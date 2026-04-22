@@ -8,9 +8,11 @@ require('dotenv').config();
 const { passport } = require('./config/passport');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const db = require('./db');
 const swaggerSpec = require('../swagger');
 
 const app = express();
+app.set('trust proxy', 1); // trust Render/Railway reverse proxy
 const routeRegistry = [
   { basePath: '/api/auth', router: authRouter },
   { basePath: '/api/users', router: usersRouter },
@@ -83,6 +85,26 @@ routeRegistry.forEach(({ basePath, router }) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'user-service' });
+});
+
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await db.healthCheck();
+    return res.json({ status: 'ok', database: 'connected' });
+  } catch (err) {
+    console.error('[health:db]', {
+      name: err?.name,
+      message: err?.message,
+      code: err?.code,
+      stack: err?.stack,
+    });
+
+    return res.status(500).json({
+      status: 'error',
+      database: 'unavailable',
+      error: err?.message || 'Database connection failed',
+    });
+  }
 });
 
 app.get('/api-docs.json', (req, res) => {
