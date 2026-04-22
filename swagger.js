@@ -1,6 +1,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 
-const PORT = process.env.PORT || 3001;
+const serverUrl = process.env.API_BASE_URL || '/';
 
 module.exports = swaggerJsdoc({
   definition: {
@@ -10,7 +10,7 @@ module.exports = swaggerJsdoc({
       version: '1.0.0',
       description: 'User authentication, profile, and saved search management for the ReRead platform',
     },
-    servers: [{ url: `http://localhost:${PORT}` }],
+    servers: [{ url: serverUrl }],
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
