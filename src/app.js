@@ -6,9 +6,15 @@ const session = require('express-session');
 const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 const { passport } = require('./config/passport');
+const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 const swaggerSpec = require('../swagger');
 
 const app = express();
+const routeRegistry = [
+  { basePath: '/api/auth', router: authRouter },
+  { basePath: '/api/users', router: usersRouter },
+];
 const defaultAllowedOrigins = [
   'http://localhost:3001',
   'http://127.0.0.1:3001',
@@ -33,12 +39,6 @@ const isAllowedOrigin = (origin) => {
     return false;
   }
 };
-
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
-});
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(helmet());
 app.use(express.json());
@@ -76,12 +76,19 @@ app.use(passport.session());
 
 app.use('/api/auth/login', loginLimiter);
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
+routeRegistry.forEach(({ basePath, router }) => {
+  app.use(basePath, router);
+});
 
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'user-service' });
 });
+
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 module.exports = app;
