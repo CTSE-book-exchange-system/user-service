@@ -1,1 +1,1 @@
-Swagger URL - https://user-service-j6o1.onrender.com/api-docs
+Swagger URL - https://user-service-wib6.onrender.com/api-docs
